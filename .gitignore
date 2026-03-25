@@ -1,6 +1,15 @@
 /vendor
 /node_modules
-.env
-/storage/*.key
 /public/storage
+/storage/*.key
+/storage/app/*
+/storage/framework/*
+/storage/logs/*
 /bootstrap/cache/*
+.env
+.env.*
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
