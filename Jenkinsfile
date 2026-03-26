@@ -17,8 +17,8 @@ pipeline {
         stage('Cleanup Old Containers') {
             steps {
                 sh '''
-                docker-compose down || true
-                docker rm -f laravel_app laravel_db || true
+                docker-compose down --remove-orphans --volumes || true
+                docker rm -f laravel_app laravel_db laravel_nginx || true
                 '''
             }
         }
