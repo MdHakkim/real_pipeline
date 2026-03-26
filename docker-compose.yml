@@ -8,7 +8,7 @@ services:
     container_name: laravel_app
     volumes:
       - ./:/var/www/html
-      - ./var/www/project/.env:/var/www/html/.env.exampless
+      - ./var/www/project/.env:/var/www/html/.env
     working_dir: /var/www/html
     networks:
       - laravel_net
