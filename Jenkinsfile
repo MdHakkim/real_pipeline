@@ -43,6 +43,8 @@ pipeline {
 
         stage('Laravel Commands') {
             steps {
+                // Install dependencies first
+                sh "docker exec ${APP_NAME} composer install --no-dev --optimize-autoloader"
                 sh "docker exec ${APP_NAME} php artisan migrate --force"
                 sh "docker exec ${APP_NAME} php artisan config:cache"
                 sh "docker exec ${APP_NAME} php artisan route:cache"
