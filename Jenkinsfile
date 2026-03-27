@@ -49,7 +49,16 @@ pipeline {
                 """
             }
         }
-
+        stage('Debug Info') {
+            steps {
+                sh '''
+                echo "BRANCH = $BRANCH"
+                echo "PROJECT = $PROJECT"
+                docker ps -a
+                docker network ls
+                '''
+            }
+        }
         stage('Build Docker Image') {
             steps {
                 sh "docker-compose build"
