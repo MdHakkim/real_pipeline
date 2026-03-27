@@ -73,6 +73,34 @@ pipeline {
                 sh "docker exec ${APP_NAME} ./vendor/bin/phpunit || true"
             }
         }
+        
+        stage('Run Migrations') {
+            steps {
+                sh '''
+                    docker exec laravel_app php artisan migrate --force
+                '''
+            }
+        }
+        stage('Laravel Optimize') {
+            steps {
+                sh '''
+                    docker exec laravel_app php artisan config:clear
+                    docker exec laravel_app php artisan cache:clear
+                    docker exec laravel_app php artisan route:clear
+                    docker exec laravel_app php artisan config:cache
+                '''
+            }
+        }
+        stage('Laravel Optimize') {
+            steps {
+                sh '''
+                    docker exec laravel_app php artisan config:clear
+                    docker exec laravel_app php artisan cache:clear
+                    docker exec laravel_app php artisan route:clear
+                    docker exec laravel_app php artisan config:cache
+                '''
+            }
+        }
     }
 
     post {
