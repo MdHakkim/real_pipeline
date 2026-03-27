@@ -4,7 +4,7 @@ pipeline {
     environment {
         GIT_REPO = 'git@github.com:MdHakkim/real_pipeline.git'
         BRANCH = 'main'
-        APP_NAME = 'laravel_app'
+        PROJECT = "laravel_${env.BRANCH_NAME ?: 'main'}"
     }
 
     stages {
@@ -13,9 +13,11 @@ pipeline {
                 script {
                     env.DB_PORT = (3300 + env.BUILD_NUMBER.toInteger()).toString()
                     env.WEB_PORT = (8080 + env.BUILD_NUMBER.toInteger()).toString()
+                    env.PROJECT = "laravel_${env.BRANCH_NAME ?: 'main'}"
+                    env.APP_NAME = "${env.PROJECT}_app_1"
         
-                    echo "DB_PORT = ${env.DB_PORT}"
-                    echo "WEB_PORT = ${env.WEB_PORT}"
+                    echo "PROJECT = ${env.PROJECT}"
+                    echo "APP_NAME = ${env.APP_NAME}"
                 }
             }
         }
@@ -90,24 +92,24 @@ pipeline {
 
         stage('Tests') {
             steps {
-                sh "docker exec ${APP_NAME} ./vendor/bin/phpunit || true"
+                sh 'docker exec ${APP_NAME} ./vendor/bin/phpunit || true'
             }
         }
         
         stage('Run Migrations') {
             steps {
                 sh '''
-                    docker exec laravel_app php artisan migrate --force
+                    docker exec ${APP_NAME} php artisan migrate --force
                 '''
             }
         }
         stage('Laravel Optimize') {
             steps {
                 sh '''
-                    docker exec laravel_app php artisan config:clear
-                    docker exec laravel_app php artisan cache:clear
-                    docker exec laravel_app php artisan route:clear
-                    docker exec laravel_app php artisan config:cache
+                    docker exec ${APP_NAME} php artisan config:clear
+                    docker exec ${APP_NAME} php artisan cache:clear
+                    docker exec ${APP_NAME} php artisan route:clear
+                    docker exec ${APP_NAME} php artisan config:cache
                 '''
             }
         }
