@@ -94,7 +94,7 @@ pipeline {
         stage('Health Check') {
             steps {
                 sh '''
-                    curl -f http://localhost || exit 1
+                    curl -f http://192.168.21.128:8082/ || exit 1
                 '''
             }
         }
