@@ -4,131 +4,97 @@ pipeline {
     environment {
         GIT_REPO = 'git@github.com:MdHakkim/real_pipeline.git'
         BRANCH = 'main'
-        PROJECT = "laravel_${env.BRANCH_NAME ?: 'main'}"
     }
 
     stages {
-        stage('Init Ports') {
+
+        stage('Init') {
             steps {
                 script {
-                    env.DB_PORT = (3300 + env.BUILD_NUMBER.toInteger()).toString()
-                    env.WEB_PORT = (8080 + env.BUILD_NUMBER.toInteger()).toString()
                     env.PROJECT = "laravel_${env.BRANCH_NAME ?: 'main'}"
                     env.APP_NAME = "${env.PROJECT}_app_1"
-        
+                    env.DB_NAME = "${env.PROJECT}_db_1"
+                    env.NETWORK = "${env.PROJECT}_default"
+
                     echo "PROJECT = ${env.PROJECT}"
                     echo "APP_NAME = ${env.APP_NAME}"
                 }
             }
         }
+
         stage('Checkout') {
             steps {
                 git branch: "${BRANCH}", url: "${GIT_REPO}"
             }
         }
 
-        stage('Copy .env') {
+        stage('Cleanup EVERYTHING') {
             steps {
                 sh '''
-                set -e
-    
-                echo "Cleaning old .env if exists..."
-                rm -rf /var/lib/jenkins/workspace/real_pipeline_project/.env
-    
-                echo "Copying .env..."
-                cp /var/www/project/.env /var/lib/jenkins/workspace/real_pipeline_project/.env
-    
-                ls -l /var/lib/jenkins/workspace/real_pipeline_project/.env
-            '''
+                    echo "Stopping old stack..."
+                    docker-compose -p $PROJECT down -v --remove-orphans || true
+
+                    echo "Removing containers by name..."
+                    docker rm -f $(docker ps -aq --filter "name=${PROJECT}") || true
+
+                    echo "Removing old images (safe cleanup)..."
+                    docker image prune -af || true
+
+                    echo "Cleaning unused networks..."
+                    docker network prune -f || true
+                '''
             }
         }
 
-        stage('Cleanup Old Containers') {
+        stage('Build') {
             steps {
                 sh '''
-                docker-compose -p ${PROJECT} down --remove-orphans --volumes || true
-                docker system prune -f || true
+                    docker-compose -p $PROJECT build --no-cache
                 '''
-            }
-        }
-        stage('Debug Info') {
-            steps {
-                sh '''
-                echo "BRANCH = $BRANCH"
-                echo "PROJECT = $PROJECT"
-                docker ps -a
-                docker network ls
-                '''
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                sh "docker-compose build"
             }
         }
 
         stage('Run Containers') {
             steps {
-                sh "docker-compose up -d"
-            }
-        }
-
-        stage('Wait for Container') {
-            steps {
-                sh "sleep 10"
-            }
-        }
-
-        stage('Laravel Commands') {
-            steps {
-                // Install dependencies first
-                sh "docker exec ${APP_NAME} composer install --no-dev --optimize-autoloader"
-                sh "docker exec ${APP_NAME} php artisan migrate --force"
-                sh "docker exec ${APP_NAME} php artisan config:cache"
-                sh "docker exec ${APP_NAME} php artisan route:cache"
-                sh "docker exec ${APP_NAME} php artisan view:cache"
-            }
-        }
-
-        stage('Tests') {
-            steps {
-                sh 'docker exec ${APP_NAME} ./vendor/bin/phpunit || true'
-            }
-        }
-        
-        stage('Run Migrations') {
-            steps {
                 sh '''
-                    docker exec ${APP_NAME} php artisan migrate --force
+                    docker-compose -p $PROJECT up -d
                 '''
             }
         }
-        stage('Laravel Optimize') {
+
+        stage('Wait') {
+            steps {
+                sh 'sleep 15'
+            }
+        }
+
+        stage('Laravel Setup') {
             steps {
                 sh '''
-                    docker exec ${APP_NAME} php artisan config:clear
-                    docker exec ${APP_NAME} php artisan cache:clear
-                    docker exec ${APP_NAME} php artisan route:clear
-                    docker exec ${APP_NAME} php artisan config:cache
+                    docker exec $APP_NAME composer install --no-interaction --no-dev --optimize-autoloader
+                    docker exec $APP_NAME php artisan migrate --force
+                    docker exec $APP_NAME php artisan config:cache
+                    docker exec $APP_NAME php artisan route:cache
+                    docker exec $APP_NAME php artisan view:cache
                 '''
             }
         }
+
         stage('Health Check') {
             steps {
                 sh '''
-                    curl -f http://192.168.21.128:8082/ || exit 1
+                    curl -f http://localhost:8082 || exit 1
                 '''
             }
         }
-
     }
 
     post {
         success {
-            echo '✅ Pipeline succeeded, Laravel app is running!'
+            echo "✅ Deployment successful for $PROJECT"
         }
         failure {
-            echo '❌ Pipeline failed!'
+            echo "❌ Pipeline failed"
         }
     }
 }
