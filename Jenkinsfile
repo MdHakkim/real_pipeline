@@ -6,12 +6,20 @@ pipeline {
         BRANCH = "${env.BRANCH_NAME}"
         PROJECT = "laravel_${env.BRANCH_NAME.replaceAll('/', '_')}"
         APP_NAME = "${PROJECT}_app_1"
-        DB_PORT = 3300 + env.BUILD_NUMBER.toInteger()
-        WEB_PORT = 8080 + env.BUILD_NUMBER.toInteger()
     }
 
     stages {
-
+        stage('Init Ports') {
+            steps {
+                script {
+                    env.DB_PORT = (3300 + env.BUILD_NUMBER.toInteger()).toString()
+                    env.WEB_PORT = (8080 + env.BUILD_NUMBER.toInteger()).toString()
+        
+                    echo "DB_PORT = ${env.DB_PORT}"
+                    echo "WEB_PORT = ${env.WEB_PORT}"
+                }
+            }
+        }
         stage('Checkout') {
             steps {
                 git branch: "${BRANCH}", url: "${GIT_REPO}"
