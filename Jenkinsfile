@@ -17,8 +17,16 @@ pipeline {
         stage('Copy .env') {
             steps {
                 sh '''
-                    cp /var/www/project/.env /var/lib/jenkins/workspace/real_pipeline_project/.env
-                '''
+                set -e
+    
+                echo "Cleaning old .env if exists..."
+                rm -rf /var/lib/jenkins/workspace/real_pipeline_project/.env
+    
+                echo "Copying .env..."
+                cp /var/www/project/.env /var/lib/jenkins/workspace/real_pipeline_project/.env
+    
+                ls -l /var/lib/jenkins/workspace/real_pipeline_project/.env
+            '''
             }
         }
 
