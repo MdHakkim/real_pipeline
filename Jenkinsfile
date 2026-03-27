@@ -22,8 +22,8 @@ pipeline {
                     // Unique ports per branch (avoid conflict)
                     def basePort = env.BRANCH_NAME == "main" ? 8080 :
                                    env.BRANCH_NAME == "dev" ? 8081 : 8100
-                    def dbport = env.BRANCH_NAME == "main" ? 8082 :
-                                   env.BRANCH_NAME == "dev" ? 8083 : 8200
+                    def dbport = env.BRANCH_NAME == "main" ? 3300 :
+                                   env.BRANCH_NAME == "dev" ? 3301 : 3302
 
                     env.WEB_PORT = basePort
                     env.DB_PORT = dbport
