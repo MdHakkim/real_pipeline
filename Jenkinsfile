@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         GIT_REPO = 'git@github.com:MdHakkim/real_pipeline.git'
-        BRANCH = 'main'
+        BRANCH = "${env.BRANCH_NAME}"
     }
 
     stages {
@@ -11,13 +11,24 @@ pipeline {
         stage('Init') {
             steps {
                 script {
-                    env.PROJECT = "laravel_${env.BRANCH_NAME ?: 'main'}"
-                    env.APP_NAME = "${env.PROJECT}_app_1"
-                    env.DB_NAME = "${env.PROJECT}_db_1"
-                    env.NETWORK = "${env.PROJECT}_default"
+
+                    // SAFE project naming per branch
+                    env.PROJECT = "laravel_${env.BRANCH_NAME}".replaceAll("/", "_")
+
+                    // Unique containers per branch
+                    env.APP_NAME = "${env.PROJECT}_app"
+                    env.DB_NAME = "${env.PROJECT}_db"
+
+                    // Unique ports per branch (avoid conflict)
+                    def basePort = env.BRANCH_NAME == "main" ? 8080 :
+                                   env.BRANCH_NAME == "dev" ? 8090 : 8100
+
+                    env.WEB_PORT = (basePort + env.BUILD_NUMBER.toInteger()).toString()
+                    env.DB_PORT = (3300 + env.BUILD_NUMBER.toInteger()).toString()
 
                     echo "PROJECT = ${env.PROJECT}"
                     echo "APP_NAME = ${env.APP_NAME}"
+                    echo "WEB_PORT = ${env.WEB_PORT}"
                 }
             }
         }
@@ -28,20 +39,14 @@ pipeline {
             }
         }
 
-        stage('Cleanup EVERYTHING') {
+        stage('Cleanup OLD BRANCH STACK ONLY') {
             steps {
                 sh '''
-                    echo "Stopping old stack..."
+                    echo "Cleaning only this branch stack..."
+
                     docker-compose -p $PROJECT down -v --remove-orphans || true
 
-                    echo "Removing containers by name..."
-                    docker rm -f $(docker ps -aq --filter "name=${PROJECT}") || true
-
-                    echo "Removing old images (safe cleanup)..."
-                    docker image prune -af || true
-
-                    echo "Cleaning unused networks..."
-                    docker network prune -f || true
+                    docker rm -f $(docker ps -aq --filter "name=$PROJECT") || true
                 '''
             }
         }
@@ -54,7 +59,7 @@ pipeline {
             }
         }
 
-        stage('Run Containers') {
+        stage('Run') {
             steps {
                 sh '''
                     docker-compose -p $PROJECT up -d
@@ -83,7 +88,7 @@ pipeline {
         stage('Health Check') {
             steps {
                 sh '''
-                    curl -f http://localhost:8082 || exit 1
+                    curl -f http://localhost:$WEB_PORT || exit 1
                 '''
             }
         }
@@ -91,10 +96,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Deployment successful for $PROJECT"
+            echo "✅ Deployment SUCCESS for branch: $BRANCH"
         }
         failure {
-            echo "❌ Pipeline failed"
+            echo "❌ Deployment FAILED for branch: $BRANCH"
         }
     }
 }
