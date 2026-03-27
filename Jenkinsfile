@@ -43,10 +43,10 @@ pipeline {
 
         stage('Cleanup Old Containers') {
             steps {
-                sh '''
-                docker-compose down --remove-orphans --volumes || true
-                docker rm -f laravel_app laravel_db laravel_nginx || true
-                '''
+                sh """
+                docker-compose -p ${PROJECT} down --remove-orphans --volumes || true
+                docker system prune -f || true
+                """
             }
         }
 
