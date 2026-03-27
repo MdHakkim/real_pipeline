@@ -7,7 +7,7 @@ services:
       dockerfile: dockerFile
     container_name: laravel_app
     volumes:
-      - ./:/var/www/html
+      - /var/lib/jenkins/workspace/real_pipeline_project:/var/www/html
       - /var/www/project/.env.example:/var/www/html/.env
     working_dir: /var/www/html
     networks:
