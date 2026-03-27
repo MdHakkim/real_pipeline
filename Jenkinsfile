@@ -69,7 +69,7 @@ pipeline {
 
         stage('Wait') {
             steps {
-                sh 'sleep 15'
+                sh 'sleep 10'
             }
         }
 
