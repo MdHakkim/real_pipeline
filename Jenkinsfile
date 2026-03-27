@@ -21,10 +21,12 @@ pipeline {
 
                     // Unique ports per branch (avoid conflict)
                     def basePort = env.BRANCH_NAME == "main" ? 8080 :
-                                   env.BRANCH_NAME == "dev" ? 8090 : 8100
+                                   env.BRANCH_NAME == "dev" ? 8081 : 8100
+                    def dbport = env.BRANCH_NAME == "main" ? 8082 :
+                                   env.BRANCH_NAME == "dev" ? 8083 : 8200
 
-                    env.WEB_PORT = (basePort + env.BUILD_NUMBER.toInteger()).toString()
-                    env.DB_PORT = (3300 + env.BUILD_NUMBER.toInteger()).toString()
+                    env.WEB_PORT = basePort
+                    env.DB_PORT = dbport
 
                     echo "PROJECT = ${env.PROJECT}"
                     echo "APP_NAME = ${env.APP_NAME}"
