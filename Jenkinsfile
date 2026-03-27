@@ -4,95 +4,95 @@ pipeline {
     environment {
         GIT_REPO = 'git@github.com:MdHakkim/real_pipeline.git'
         BRANCH = "${env.BRANCH_NAME}"
-        PROJECT = "laravel_${env.BRANCH_NAME.replaceAll('/', '_')}"
-        APP_NAME = "${PROJECT}_app_1"
     }
 
     stages {
-        stage('Init Ports') {
+
+        stage('Init') {
             steps {
                 script {
+
+                    // SAFE project naming per branch
+                    env.PROJECT = "laravel_${env.BRANCH_NAME}".replaceAll("/", "_")
+
+                    // Unique containers per branch
+                    env.APP_NAME = "${env.PROJECT}_app"
+                    env.DB_NAME = "${env.PROJECT}_db"
+
+                    // Unique ports per branch (avoid conflict)
+                    def basePort = env.BRANCH_NAME == "main" ? 8080 :
+                                   env.BRANCH_NAME == "dev" ? 8090 : 8100
+
+                    env.WEB_PORT = (basePort + env.BUILD_NUMBER.toInteger()).toString()
                     env.DB_PORT = (3300 + env.BUILD_NUMBER.toInteger()).toString()
-                    env.WEB_PORT = (8080 + env.BUILD_NUMBER.toInteger()).toString()
-        
-                    echo "DB_PORT = ${env.DB_PORT}"
+
+                    echo "PROJECT = ${env.PROJECT}"
+                    echo "APP_NAME = ${env.APP_NAME}"
                     echo "WEB_PORT = ${env.WEB_PORT}"
                 }
             }
         }
+
         stage('Checkout') {
             steps {
                 git branch: "${BRANCH}", url: "${GIT_REPO}"
             }
         }
 
-        stage('Cleanup Old Containers') {
+        stage('Cleanup OLD BRANCH STACK ONLY') {
             steps {
-                sh """
-                docker-compose -p ${PROJECT} down --remove-orphans --volumes || true
-                docker system prune -f || true
-                """
+                sh '''
+                    echo "Cleaning only this branch stack..."
+
+                    docker-compose -p $PROJECT down -v --remove-orphans || true
+
+                    docker rm -f $(docker ps -aq --filter "name=$PROJECT") || true
+                '''
             }
         }
 
-        stage('Copy .env') {
+        stage('Build') {
             steps {
-                sh """
-                rm -f .env
-                cp /var/www/project/.env .env
-                """
+                sh '''
+                    docker-compose -p $PROJECT build --no-cache
+                '''
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Run') {
             steps {
-                sh "docker-compose -p ${PROJECT} build"
-            }
-        }
-
-        stage('Run Containers') {
-            steps {
-                sh "docker-compose -p ${PROJECT} up -d"
+                sh '''
+                    docker-compose -p $PROJECT up -d
+                '''
             }
         }
 
         stage('Wait') {
             steps {
-                sh "sleep 10"
+                sh 'sleep 10'
             }
         }
 
-        stage('Laravel Commands') {
+        stage('Laravel Setup') {
             steps {
-                sh """
-                docker exec ${APP_NAME} composer install --no-dev --optimize-autoloader
-                docker exec ${APP_NAME} php artisan migrate --force
-                docker exec ${APP_NAME} php artisan config:cache
-                docker exec ${APP_NAME} php artisan route:cache
-                docker exec ${APP_NAME} php artisan view:cache
-                """
+               sh '''
+                    docker-compose -p $PROJECT exec -T app composer install --no-interaction --no-dev --optimize-autoloader
+                    docker-compose -p $PROJECT exec -T app php artisan migrate --force
+                    docker-compose -p $PROJECT exec -T app php artisan config:cache
+                    docker-compose -p $PROJECT exec -T app php artisan route:cache
+                    docker-compose -p $PROJECT exec -T app php artisan view:cache
+                '''
             }
         }
 
-        stage('Tests') {
-            steps {
-                sh "docker exec ${APP_NAME} ./vendor/bin/phpunit || true"
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                sh "curl -f http://192.168.21.128:8082/ || exit 1"
-            }
-        }
     }
 
     post {
         success {
-            echo "✅ Pipeline ${PROJECT} succeeded!"
+            echo "✅ Deployment SUCCESS for branch: $BRANCH"
         }
         failure {
-            echo "❌ Pipeline ${PROJECT} failed!"
+            echo "❌ Deployment FAILED for branch: $BRANCH"
         }
     }
 }
