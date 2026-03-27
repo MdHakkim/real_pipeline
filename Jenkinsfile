@@ -6,6 +6,8 @@ pipeline {
         BRANCH = "${env.BRANCH_NAME}"
         PROJECT = "laravel_${env.BRANCH_NAME.replaceAll('/', '_')}"
         APP_NAME = "${PROJECT}_app_1"
+        DB_PORT = 3300 + env.BUILD_NUMBER.toInteger()
+        WEB_PORT = 8080 + env.BUILD_NUMBER.toInteger()
     }
 
     stages {
