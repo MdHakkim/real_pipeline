@@ -75,12 +75,12 @@ pipeline {
 
         stage('Laravel Setup') {
             steps {
-                sh '''
-                    docker exec $APP_NAME composer install --no-interaction --no-dev --optimize-autoloader
-                    docker exec $APP_NAME php artisan migrate --force
-                    docker exec $APP_NAME php artisan config:cache
-                    docker exec $APP_NAME php artisan route:cache
-                    docker exec $APP_NAME php artisan view:cache
+               sh '''
+                    docker-compose -p $PROJECT exec -T app composer install --no-interaction --no-dev --optimize-autoloader
+                    docker-compose -p $PROJECT exec -T app php artisan migrate --force
+                    docker-compose -p $PROJECT exec -T app php artisan config:cache
+                    docker-compose -p $PROJECT exec -T app php artisan route:cache
+                    docker-compose -p $PROJECT exec -T app php artisan view:cache
                 '''
             }
         }
