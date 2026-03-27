@@ -5,11 +5,20 @@ pipeline {
         GIT_REPO = 'git@github.com:MdHakkim/real_pipeline.git'
         BRANCH = 'main'
         APP_NAME = 'laravel_app'
-        DB_PORT = 3300 + env.BUILD_NUMBER.toInteger()
-        WEB_PORT = 8080 + env.BUILD_NUMBER.toInteger()
     }
 
     stages {
+        stage('Init Ports') {
+            steps {
+                script {
+                    env.DB_PORT = (3300 + env.BUILD_NUMBER.toInteger()).toString()
+                    env.WEB_PORT = (8080 + env.BUILD_NUMBER.toInteger()).toString()
+        
+                    echo "DB_PORT = ${env.DB_PORT}"
+                    echo "WEB_PORT = ${env.WEB_PORT}"
+                }
+            }
+        }
         stage('Checkout') {
             steps {
                 git branch: "${BRANCH}", url: "${GIT_REPO}"
