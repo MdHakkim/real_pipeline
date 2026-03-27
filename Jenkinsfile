@@ -91,6 +91,13 @@ pipeline {
                 '''
             }
         }
+        stage('Health Check') {
+        steps {
+            sh '''
+                curl -f http://localhost || exit 1
+            '''
+        }
+    }
 
     }
 
