@@ -14,6 +14,14 @@ pipeline {
             }
         }
 
+        stage('Copy .env') {
+            steps {
+                sh '''
+                    cp /var/www/project/.env /var/lib/jenkins/workspace/real_pipeline_project/.env
+                '''
+            }
+        }
+
         stage('Cleanup Old Containers') {
             steps {
                 sh '''
