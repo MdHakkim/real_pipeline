@@ -43,10 +43,10 @@ pipeline {
 
         stage('Cleanup Old Containers') {
             steps {
-                sh """
+                sh '''
                 docker-compose -p ${PROJECT} down --remove-orphans --volumes || true
                 docker system prune -f || true
-                """
+                '''
             }
         }
         stage('Debug Info') {
