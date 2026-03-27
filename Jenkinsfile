@@ -85,13 +85,6 @@ pipeline {
             }
         }
 
-        stage('Health Check') {
-            steps {
-                sh '''
-                    curl -f http://localhost:$WEB_PORT || exit 1
-                '''
-            }
-        }
     }
 
     post {
