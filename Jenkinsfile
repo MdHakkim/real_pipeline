@@ -5,6 +5,8 @@ pipeline {
         GIT_REPO = 'git@github.com:MdHakkim/real_pipeline.git'
         BRANCH = 'main'
         APP_NAME = 'laravel_app'
+        DB_PORT = 3300 + env.BUILD_NUMBER.toInteger()
+        WEB_PORT = 8080 + env.BUILD_NUMBER.toInteger()
     }
 
     stages {
